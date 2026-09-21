@@ -21,6 +21,6 @@ window.MomentSync=(()=>{
     status='已同步 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
     return payload;
   }
-  function inviteLink(){return token?`${location.origin}${location.pathname}?v=5#room=${token}`:'';}
+  function inviteLink(){return token?`${location.origin}${location.pathname}?v=6#room=${token}`:'';}
   return {configured,get connected(){return configured&&!!token;},get status(){return status;},read:()=>request(),write:request,inviteLink};
 })();

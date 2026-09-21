@@ -43,7 +43,7 @@ function prettyDate(){const d=new Date(`${state.date}T12:00:00`);return `${d.get
 function chosenFood(){return state.food==='其他'?state.other:state.food;}
 function replyText(){return `好呀，一起去吃饭！\n我们约好：${prettyDate()} ${state.time}\n一起吃：${chosenFood()}\n地点：杭州 · ${state.district}${state.venue?' · '+state.venue:'（店铺一起定）'}${state.note?`\n想对你说：${state.note}`:''}\n那就到时候见！`;}
 let toastTimer;function toast(text){const el=document.querySelector('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3000);}
-const music=new Audio('bgm.m4a');music.loop=true;music.preload='none';music.volume=.45;
+const music=new Audio('bgm.m4a');music.loop=true;music.preload='auto';music.autoplay=true;music.volume=.45;
 let musicMutedByUser=false;
 let tapAudioContext;
 function chime(){
@@ -60,11 +60,16 @@ function chime(){
 }
 document.addEventListener('click',event=>{const button=event.target.closest?.('button');if(button&&!button.disabled)chime();},true);
 function musicUI(){const b=document.querySelector('#sound');b.setAttribute('aria-pressed',String(!music.paused));b.setAttribute('aria-label',music.paused?'播放《关于爱的定义》':'暂停《关于爱的定义》');b.title='方大同 · 关于爱的定义';}
-async function startMusic(){if(musicMutedByUser)return;try{await music.play();}catch{toast('点右上角音符，就可以播放音乐');}musicUI();}
+async function startMusic(quiet=false){if(musicMutedByUser||!music.paused)return;try{await music.play();}catch{if(!quiet)toast('轻触页面，或点右上角音符播放音乐');}musicUI();}
 music.addEventListener('play',musicUI);music.addEventListener('pause',musicUI);
 music.addEventListener('error',()=>{musicUI();toast('音乐暂时没加载好，稍后点音符重试');});
 document.querySelector('#sound').onclick=()=>{if(music.paused){musicMutedByUser=false;startMusic();}else{musicMutedByUser=true;music.pause();}};
 musicUI();
+startMusic(true);
+const tryMusicOnGesture=event=>{if(!event.target.closest?.('#sound')&&music.paused&&!musicMutedByUser)startMusic(true);};
+document.addEventListener('click',tryMusicOnGesture,true);
+document.addEventListener('touchend',tryMusicOnGesture,{passive:true});
+document.addEventListener('keydown',tryMusicOnGesture);
 render();
 document.querySelector('#journal-nav').onclick=()=>{capture();Moment.showDiary(render);};
 if(document.modelContext?.registerTool){try{Promise.resolve(document.modelContext.registerTool({name:'read_date_invitation',description:'Read current invitation choices. Does not send or save a reply.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},execute:()=>({...state,foodOptions:foods.map(x=>x[1]),reply:state.step===6?replyText():null})})).catch(()=>{});}catch{}}
