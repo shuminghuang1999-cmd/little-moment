@@ -29,7 +29,7 @@ window.Moment = (() => {
   }
   function stats(list=records) {
     const visited=list.filter(r=>r.status==='visited');
-    const counts=new Map(); visited.forEach(r=>counts.set(r.food,(counts.get(r.food)||0)+1));
+    const counts=new Map(); visited.forEach(r=>new Set(r.food.split(/[、，,；;]/).map(s=>s.trim()).filter(Boolean)).forEach(food=>counts.set(food,(counts.get(food)||0)+1)));
     return {visits:visited.length,districts:new Set(visited.map(r=>r.district)).size,
       venues:new Set(visited.map(r=>r.district+'|'+r.venue.trim().toLocaleLowerCase())).size,
       ranking:[...counts].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])),visited};
@@ -72,7 +72,7 @@ window.Moment = (() => {
       <svg viewBox="0 0 600 405" role="img" aria-label="杭州十区美食足迹，粉色表示有用餐记录的区域"><title>杭州美食足迹</title>${(window.HANGZHOU_DISTRICTS||[]).map(d=>{
         const count=visited.filter(r=>r.district===d.name).length;
         return `<path d="${d.path}" class="map-district ${count?'lit':''} ${activeDistrict===d.name?'selected':''}"><title>${d.name} · ${count} 次打卡</title></path>`;
-      }).join('')}<text x="45" y="385" class="map-caption">把杭州，一口一口收集起来。</text><image href="tiger.png" x="498" y="312" width="55" height="55"/></svg>
+      }).join('')}<text x="45" y="385" class="map-caption">把杭州，一口一口收集起来。</text><image href="rabbit.png" x="447" y="312" width="55" height="55"/><image href="tiger.png" x="500" y="312" width="55" height="55"/></svg>
       <div class="map-legend"><span><i></i>还没去过</span><span><i class="lit"></i>已经点亮</span></div>
       <p class="map-credit">区域足迹示意，不标注店铺坐标 · <a href="https://geo.datav.aliyun.com/areas_v3/bound/330100_full.json" target="_blank" rel="noopener">区域轮廓来源</a></p></div>`;
   }
@@ -170,7 +170,7 @@ window.Moment = (() => {
     ctx.strokeStyle='#e6cdda';ctx.setLineDash([6,10]);ctx.beginPath();ctx.moveTo(90,y);ctx.lineTo(990,y);ctx.stroke();ctx.setLineDash([]);y+=65;
     noteLines.forEach(line=>{text(line,90,y,28,'#997e8e');y+=43;});
     text('a little moment, just for you.',90,H-103,26,'#b08b9f','serif');
-    try {const tiger=await loadImage('tiger.png');ctx.drawImage(tiger,886,H-187,104,104);}catch {/* The card still works if the mascot asset is unavailable. */}
+    for(const [src,x] of [['rabbit.png',824],['tiger.png',910]]){try{const mascot=await loadImage(src);ctx.drawImage(mascot,x,H-174,84,84);}catch{/* Keep the exported card available if a mascot cannot load. */}}
     return canvas;
   }
   async function poster(record) {
