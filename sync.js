@@ -2,15 +2,26 @@ window.MomentSync=(()=>{
   const config=window.MOMENT_SYNC_CONFIG||{};
   const configured=!!(config.url&&config.key);
   const tokenKey='little-moment-room-v1';
-  let token='';
+  const validToken=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
   const hash=new URLSearchParams(location.hash.slice(1));
-  try {token=hash.get('room')||localStorage.getItem(tokenKey)||'';}catch{token=hash.get('room')||'';}
-  if(!/^[a-f0-9]{64}$/.test(token))token='';
-  if(token){try{localStorage.setItem(tokenKey,token);}catch{}if(hash.has('room'))history.replaceState(null,'',location.pathname+location.search);}
-  let status=configured?(token?'正在同步…':'请用你们的专属链接打开地图'):'双人同步正在准备，暂时还不能保存记录';
+  const query=new URLSearchParams(location.search);
+  const supplied=hash.has('room')?hash.get('room'):query.get('room');
+  let token='', invalidLink=supplied!==null&&!validToken(supplied);
+  if(supplied!==null){token=validToken(supplied)?supplied:'';}
+  else {try {const saved=localStorage.getItem(tokenKey);if(validToken(saved))token=saved;}catch{}}
+  // Keep the capability in the fragment so copied links work on another phone,
+  // including browsers that block local storage. Fragments are not sent to hosts.
+  if(token){
+    try{localStorage.setItem(tokenKey,token);}catch{}
+    hash.set('room',token);query.delete('room');
+    const search=query.toString();
+    try{history.replaceState(null,'',location.pathname+(search?'?'+search:'')+'#'+hash.toString());}catch{}
+  }
+  const entryError=invalidLink?'专属链接不完整或有误，请重新复制完整链接打开。':'请使用带有共享入口的专属链接打开。';
+  let status=configured?(token?'正在同步…':entryError):'双人同步正在准备，暂时还不能保存记录';
   async function request(changes=[]) {
     if(!configured)throw Error('还需要连接云端数据库，才能保存和同步记录。');
-    if(!token)throw Error('请使用带有共享入口的专属链接打开。');
+    if(!token)throw Error(entryError);
     const headers={'Content-Type':'application/json',apikey:config.key};
     if(config.key.startsWith('eyJ'))headers.Authorization='Bearer '+config.key;
     let result;
@@ -21,6 +32,6 @@ window.MomentSync=(()=>{
     status='已同步 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
     return payload;
   }
-  function inviteLink(){return token?`${location.origin}${location.pathname}?v=6#room=${token}`:'';}
+  function inviteLink(){return token?`${location.origin}${location.pathname}?v=7#room=${token}`:'';}
   return {configured,get connected(){return configured&&!!token;},get status(){return status;},read:()=>request(),write:request,inviteLink};
 })();
